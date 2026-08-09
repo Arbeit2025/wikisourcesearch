@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WikiSource Scout — Wikipedia向け参考文献・一次資料検索</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e232c; --text:#edf1f7; --muted:#9aa5b5;
+  --line:#2b3340; --accent:#8bb4ff; --accent2:#b9d0ff; --ok:#6ed39a; --warn:#ffd37a; --bad:#ff8f8f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0c0e12,#11151b 34%,#0f1115);color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:30px 18px 70px}
+.hero{padding:26px 0 16px}
+.kicker{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(30px,5vw,56px);line-height:1.03;margin:8px 0 12px;letter-spacing:-.035em}
+.sub{max-width:800px;color:var(--muted);line-height:1.75}
+.notice{margin-top:16px;padding:12px 14px;border:1px solid #574c32;background:#211d14;border-radius:12px;color:#efdca5;font-size:13px;line-height:1.6}
+.searchbox{position:sticky;top:0;z-index:5;background:rgba(15,17,21,.92);backdrop-filter:blur(14px);padding:12px 0 14px}
+.searchrow{display:grid;grid-template-columns:1fr auto;gap:10px}
+input,select,button{font:inherit}
+#q{width:100%;border:1px solid var(--line);background:#151922;color:var(--text);padding:15px 16px;border-radius:13px;outline:none}
+#q:focus{border-color:#5e7fad;box-shadow:0 0 0 3px rgba(139,180,255,.10)}
+button{border:0;border-radius:12px;background:var(--accent);color:#10141a;padding:0 20px;font-weight:750;cursor:pointer}
+button:hover{filter:brightness(1.06)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.controls label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:#151922;padding:8px 10px;border-radius:10px;color:#c8d0dc;font-size:13px}
+.controls select{background:transparent;color:inherit;border:0;outline:0}
+.controls option{background:#171a21}
+.grid{display:grid;grid-template-columns:250px 1fr;gap:18px;margin-top:20px}
+.side{align-self:start;position:sticky;top:122px}
+.panel{border:1px solid var(--line);background:rgba(23,26,33,.9);border-radius:14px;padding:14px}
+.panel h3{font-size:13px;margin:0 0 10px;color:#dfe6f1}
+.src{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:#596273}
+.dot.on{background:var(--ok);box-shadow:0 0 0 3px rgba(110,211,154,.1)}
+.dot.err{background:var(--bad)}
+.tips{font-size:12px;color:var(--muted);line-height:1.65;margin-top:14px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+#count{font-size:13px;color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}
+.links a{font-size:12px;color:var(--accent2);text-decoration:none;border:1px solid var(--line);padding:6px 8px;border-radius:9px;background:#151922}
+.card{border:1px solid var(--line);background:linear-gradient(180deg,#181c24,#151920);border-radius:15px;padding:17px;margin-bottom:11px}
+.topline{display:flex;justify-content:space-between;gap:14px}
+.title{font-size:17px;font-weight:760;line-height:1.45;margin:0}
+.title a{color:var(--text);text-decoration:none}.title a:hover{color:var(--accent2)}
+.meta{margin:7px 0 0;color:var(--muted);font-size:13px;line-height:1.55}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.badge{font-size:11px;padding:4px 7px;border-radius:999px;border:1px solid var(--line);color:#bac4d2;background:#12161c}
+.badge.primary{border-color:#406f5a;color:#9ce2ba;background:#102019}
+.badge.secondary{border-color:#3e5678;color:#abc9fb;background:#111b2a}
+.badge.book{border-color:#66563b;color:#f0d599;background:#211c12}
+.score{min-width:58px;text-align:center;border:1px solid var(--line);border-radius:11px;padding:8px 6px;height:max-content}
+.score b{font-size:18px}.score span{display:block;color:var(--muted);font-size:10px}
+.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+.actions button,.actions a{font-size:12px;padding:7px 9px;border-radius:8px;text-decoration:none}
+.actions button{background:#252c37;color:#dce5f1;border:1px solid #333d4b}
+.actions a{border:1px solid #333d4b;color:var(--accent2);background:#171d26}
+.empty{border:1px dashed var(--line);border-radius:14px;padding:40px 18px;text-align:center;color:var(--muted);line-height:1.7}
+details{margin-top:10px}
+summary{cursor:pointer;color:#c7d2e1;font-size:12px}
+.cite{margin-top:8px;background:#101319;border:1px solid #29313d;border-radius:9px;padding:10px;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;color:#c9d4e3}
+.small{font-size:11px;color:var(--muted);margin-top:7px}
+@media(max-width:780px){.grid{grid-template-columns:1fr}.side{position:static}.searchrow{grid-template-columns:1fr}.searchrow button{height:48px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <div class="kicker">Prototype · source discovery</div>
+    <h1>WikiSource Scout</h1>
+    <div class="sub">Wikipediaの記事を書く前に、論文・書籍・デジタル化された一次資料をまとめて探すための軽量スカウトツール。結果を「一次資料候補」「二次資料候補」に分け、Wikipedia用の引用下書きも作ります。</div>
+    <div class="notice">注意：Wikipediaでは、一次資料だけで記事の解釈や評価を組み立てるのは不向きです。一次資料は事実の直接確認に、独立した二次資料は特筆性・評価・文脈づけに使う想定です。</div>
+  </section>
+
+  <div class="searchbox">
+    <div class="searchrow">
+      <input id="q" placeholder="例：Brideswell Aberdeenshire / 藤岡市 鉄道 / 1912 census" autofocus>
+      <button id="searchBtn">横断検索</button>
+    </div>
+    <div class="controls">
+      <label>表示
+        <select id="kind">
+          <option value="all">すべて</option>
+          <option value="primary">一次資料候補</option>
+          <option value="secondary">二次資料候補</option>
+        </select>
+      </label>
+      <label>年代
+        <select id="era">
+          <option value="all">指定なし</option>
+          <option value="old">〜1945</option>
+          <option value="mid">1946〜1999</option>
+          <option value="new">2000〜</option>
+        </select>
+      </label>
+      <label>並び順
+        <select id="sort">
+          <option value="score">Wiki向けスコア</option>
+          <option value="year">新しい順</option>
+          <option value="oldyear">古い順</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="grid">
+    <aside class="side">
+      <div class="panel">
+        <h3>検索先</h3>
+        <div class="src"><span class="dot" id="s-openalex"></span>OpenAlex <small>論文・学術</small></div>
+        <div class="src"><span class="dot" id="s-crossref"></span>Crossref <small>DOI文献</small></div>
+        <div class="src"><span class="dot" id="s-openlibrary"></span>Open Library <small>書籍</small></div>
+        <div class="src"><span class="dot" id="s-archive"></span>Internet Archive <small>一次資料強め</small></div>
+        <div class="src"><span class="dot" id="s-loc"></span>Library of Congress <small>公文書・写真等</small></div>
+        <div class="tips">
+          <b>スコアの考え方</b><br>
+          DOI・著者・年・出版社など、出典記述に必要なメタデータが揃うほど加点。一次資料は「一次資料であること」自体を加点せず、用途ラベルとして扱います。
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="toolbar">
+        <div id="count">検索語を入力してください</div>
+      </div>
+      <div class="links" id="deepLinks"></div>
+      <div id="results" class="empty">
+        <b>検索語を入れて横断検索。</b><br>
+        地名なら「地名 + county」「地名 + census」「地名 + gazetteer」、人物なら「氏名 + archive」「氏名 + papers」などを混ぜると、一次資料の底まで潜りやすくなります。
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let ALL = [];
+
+function esc(s=''){ return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function yearOf(v){ const n=parseInt(String(v||'').match(/\b(1[5-9]\d{2}|20\d{2}|2100)\b/)?.[0]); return Number.isFinite(n)?n:null; }
+function setStatus(id,state){ const e=$('#s-'+id); if(!e)return; e.className='dot '+(state==='ok'?'on':state==='err'?'err':''); }
+
+function wikScore(x){
+  let s=35;
+  if(x.title) s+=12;
+  if(x.author) s+=9;
+  if(x.year) s+=8;
+  if(x.publisher) s+=7;
+  if(x.doi || x.identifier) s+=10;
+  if(x.url) s+=6;
+  if(x.source==='Crossref' || x.source==='OpenAlex') s+=5;
+  if(x.source==='Library of Congress') s+=4;
+  return Math.min(99,s);
+}
+
+function classify(x){
+  const t=(x.type+' '+x.publisher+' '+x.title).toLowerCase();
+  if(x.source==='Library of Congress' || x.source==='Internet Archive') return 'primary';
+  if(/newspaper|manuscript|letter|diary|map|photograph|government|census|archive/.test(t)) return 'primary';
+  return 'secondary';
+}
+
+function citeTemplate(x){
+  const title=(x.title||'').replace(/[|{}]/g,'');
+  const author=(x.author||'').replace(/[|{}]/g,'');
+  const publisher=(x.publisher||'').replace(/[|{}]/g,'');
+  if(x.doi){
+    return `{{cite journal |title=${title} |author=${author} |year=${x.year||''} |doi=${x.doi} |url=${x.url||''}}}`;
+  }
+  if(/book/i.test(x.type||'') || x.source==='Open Library' || x.source==='Internet Archive'){
+    return `{{cite book |title=${title} |author=${author} |publisher=${publisher} |year=${x.year||''} |url=${x.url||''}}}`;
+  }
+  return `{{cite web |title=${title} |author=${author} |publisher=${publisher||x.source} |date=${x.year||''} |url=${x.url||''} |access-date=${new Date().toISOString().slice(0,10)}}}`;
+}
+
+function normalizeTitle(s){ return (s||'').toLowerCase().replace(/\W+/g,' ').trim(); }
+function dedupe(arr){
+  const seen=new Map();
+  for(const x of arr){
+    const key=(x.doi||x.identifier||normalizeTitle(x.title)+'|'+(x.year||'')).toLowerCase();
+    if(!key) continue;
+    if(!seen.has(key)) seen.set(key,x);
+  }
+  return [...seen.values()];
+}
+
+async function getOpenAlex(q){
+  const u='https://api.openalex.org/works?per-page=12&search='+encodeURIComponent(q);
+  const r=await fetch(u); if(!r.ok) throw Error(r.status);
+  const j=await r.json();
+  return (j.results||[]).map(w=>({
+    source:'OpenAlex', title:w.display_name, author:(w.authorships||[]).slice(0,4).map(a=>a.author?.display_name).filter(Boolean).join(', '),
+    year:w.publication_year, publisher:w.primary_location?.source?.display_name||'', doi:(w.doi||'').replace('https://doi.org/',''),
+    identifier:w.id, url:w.doi||w.primary_location?.landing_page_url||w.id, type:w.type||'article'
+  }));
+}
+async function getCrossref(q){
+  const u='https://api.crossref.org/works?rows=12&query.bibliographic='+encodeURIComponent(q);
+  const r=await fetch(u); if(!r.ok) throw Error(r.status);
+  const j=await r.json();
+  return (j.message?.items||[]).map(w=>({
+    source:'Crossref', title:Array.isArray(w.title)?w.title[0]:w.title, author:(w.author||[]).slice(0,4).map(a=>[a.given,a.family].filter(Boolean).join(' ')).join(', '),
+    year:w.published?.['date-parts']?.[0]?.[0]||w.issued?.['date-parts']?.[0]?.[0], publisher:w.publisher||w['container-title']?.[0]||'',
+    doi:w.DOI||'', identifier:w.DOI||'', url:w.URL||('https://doi.org/'+w.DOI), type:w.type||'article'
+  }));
+}
+async function getOpenLibrary(q){
+  const u='https://openlibrary.org/search.json?limit=12&q='+encodeURIComponent(q);
+  const r=await fetch(u); if(!r.ok) throw Error(r.status);
+  const j=await r.json();
+  return (j.docs||[]).map(w=>({
+    source:'Open Library', title:w.title, author:(w.author_name||[]).slice(0,4).join(', '), year:w.first_publish_year||'',
+    publisher:(w.publisher||[])[0]||'', identifier:(w.isbn||[])[0]||w.key||'', url:'https://openlibrary.org'+w.key, type:'book'
+  }));
+}
+async function getArchive(q){
+  const params=new URLSearchParams();
+  params.set('q',`title:(${q}) OR creator:(${q})`);
+  ['identifier','title','creator','date','year','publisher','mediatype'].forEach(f=>params.append('fl[]',f));
+  params.set('rows','12'); params.set('page','1'); params.set('output','json');
+  const r=await fetch('https://archive.org/advancedsearch.php?'+params.toString()); if(!r.ok) throw Error(r.status);
+  const j=await r.json();
+  return (j.response?.docs||[]).map(w=>({
+    source:'Internet Archive', title:Array.isArray(w.title)?w.title[0]:w.title, author:Array.isArray(w.creator)?w.creator.join(', '):(w.creator||''),
+    year:yearOf(w.year||w.date), publisher:Array.isArray(w.publisher)?w.publisher[0]:(w.publisher||''), identifier:w.identifier,
+    url:'https://archive.org/details/'+encodeURIComponent(w.identifier), type:Array.isArray(w.mediatype)?w.mediatype[0]:(w.mediatype||'archive')
+  }));
+}
+async function getLOC(q){
+  const r=await fetch('https://www.loc.gov/search/?fo=json&c=12&q='+encodeURIComponent(q)); if(!r.ok) throw Error(r.status);
+  const j=await r.json();
+  return (j.results||[]).map(w=>({
+    source:'Library of Congress', title:w.title, author:Array.isArray(w.contributor)?w.contributor.slice(0,4).join(', '):'',
+    year:yearOf(w.date), publisher:Array.isArray(w.partof)?w.partof[0]:(w.original_format?.[0]||'Library of Congress'),
+    identifier:w.id||'', url:w.id||w.url, type:(w.original_format||[]).join(', ')||'archive'
+  }));
+}
+
+const SOURCES=[
+  ['openalex',getOpenAlex],['crossref',getCrossref],['openlibrary',getOpenLibrary],['archive',getArchive],['loc',getLOC]
+];
+
+function deepLinks(q){
+ const x=encodeURIComponent(q);
+ return [
+   ['Google Books','https://www.google.com/search?tbm=bks&q='+x],
+   ['Google Scholar','https://scholar.google.com/scholar?q='+x],
+   ['HathiTrust','https://catalog.hathitrust.org/Search/Home?lookfor='+x+'&type=all&inst='],
+   ['WorldCat','https://search.worldcat.org/search?q='+x],
+   ['Wikisource','https://en.wikisource.org/w/index.php?search='+x],
+   ['国会図書館サーチ','https://ndlsearch.ndl.go.jp/search?keyword='+x],
+   ['CiNii Research','https://cir.nii.ac.jp/all?q='+x]
+ ].map(([n,u])=>`<a target="_blank" rel="noopener" href="${u}">${n} ↗</a>`).join('');
+}
+
+function render(){
+  let a=[...ALL];
+  const kind=$('#kind').value, era=$('#era').value, sort=$('#sort').value;
+  a=a.filter(x=>{
+    const k=classify(x), y=x.year||null;
+    if(kind!=='all' && k!==kind) return false;
+    if(era==='old' && !(y && y<=1945)) return false;
+    if(era==='mid' && !(y && y>=1946 && y<=1999)) return false;
+    if(era==='new' && !(y && y>=2000)) return false;
+    return true;
+  });
+  if(sort==='score') a.sort((a,b)=>wikScore(b)-wikScore(a));
+  if(sort==='year') a.sort((a,b)=>(b.year||0)-(a.year||0));
+  if(sort==='oldyear') a.sort((a,b)=>(a.year||9999)-(b.year||9999));
+  $('#count').textContent=`${a.length}件表示 / ${ALL.length}件取得`;
+  if(!a.length){ $('#results').className='empty'; $('#results').innerHTML='条件に合う結果がありません。検索語や年代フィルタを変えてください。'; return; }
+  $('#results').className='';
+  $('#results').innerHTML=a.map((x,i)=>{
+    const k=classify(x), score=wikScore(x), cite=citeTemplate(x);
+    return `<article class="card">
+      <div class="topline">
+        <div>
+          <h2 class="title"><a target="_blank" rel="noopener" href="${esc(x.url||'#')}">${esc(x.title||'(無題)')}</a></h2>
+          <div class="meta">${esc(x.author||'著者不明')}${x.year?' · '+esc(x.year):''}${x.publisher?' · '+esc(x.publisher):''}</div>
+          <div class="badges">
+            <span class="badge ${k}">${k==='primary'?'一次資料候補':'二次資料候補'}</span>
+            <span class="badge">${esc(x.source)}</span>
+            <span class="badge ${/book/i.test(x.type||'')?'book':''}">${esc(x.type||'document')}</span>
+            ${x.doi?'<span class="badge">DOIあり</span>':''}
+          </div>
+        </div>
+        <div class="score"><b>${score}</b><span>/ 99</span></div>
+      </div>
+      <div class="actions">
+        <a target="_blank" rel="noopener" href="${esc(x.url||'#')}">原ページ ↗</a>
+        ${x.doi?`<a target="_blank" rel="noopener" href="https://doi.org/${esc(x.doi)}">DOI ↗</a>`:''}
+        <button onclick="navigator.clipboard.writeText(document.getElementById('cite-${i}').textContent)">引用テンプレをコピー</button>
+      </div>
+      <details><summary>Wikipedia引用テンプレ</summary><div class="cite" id="cite-${i}">${esc(cite)}</div>
+      <div class="small">自動生成なので、ページ番号・発行地・巻号・access-date等は原資料で確認してください。</div></details>
+    </article>`;
+  }).join('');
+}
+
+async function search(){
+  const q=$('#q').value.trim(); if(!q)return;
+  $('#results').className='empty'; $('#results').innerHTML='検索中… 各データベースから拾っています。';
+  $('#count').textContent='検索中';
+  $('#deepLinks').innerHTML=deepLinks(q);
+  ALL=[]; SOURCES.forEach(([id])=>setStatus(id,''));
+  const jobs=SOURCES.map(async ([id,fn])=>{
+    try{ const items=await fn(q); setStatus(id,'ok'); return items; }
+    catch(e){ console.warn(id,e); setStatus(id,'err'); return []; }
+  });
+  const chunks=await Promise.all(jobs);
+  ALL=dedupe(chunks.flat());
+  render();
+}
+$('#searchBtn').onclick=search;
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
+['kind','era','sort'].forEach(id=>$('#'+id).addEventListener('change',render));
+</script>
+</body>
+</html>
